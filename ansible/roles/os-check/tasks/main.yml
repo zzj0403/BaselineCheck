@@ -1,0 +1,13 @@
+- name: 分发脚本
+  copy:
+    src: ../files/BaselineCheck
+    dest: /usr/local/bin/
+    mode: 0755
+
+- name: 执行脚本
+  command: /usr/local/bin/BaselineCheck check  -p http://192.168.30.141:9527/check
+  register: result
+
+- name: 输出结果
+  debug:
+    var: result.stderr_lines

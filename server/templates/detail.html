@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>合规报告</title>
+    <style>
+        /* 通过的项用绿色 */
+        .pass {
+            color: green;
+        }
+        /* 不通过的项用红色 */
+        .fail {
+            color: red;
+        }
+        /* 设置表格宽度 */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        /* 固定保护措施列宽度 */
+        td.protect, th.protect {
+            width: 350px; /* 固定宽度，可根据需要调整 */
+            word-wrap: break-word; /* 允许单词换行 */
+        }
+        /* 固定保护措施列宽度 */
+        td.actual, th.actual {
+            width: 300px; /* 固定宽度，可根据需要调整 */
+            word-wrap: break-word; /* 允许单词换行 */
+        }
+        /* 其他列的自适应宽度 */
+        td, th {
+            width: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>合规报告</h1>
+
+    <!-- 基本信息部分 -->
+    <h2>基本信息</h2>
+    <ul>
+        <li>局域网IP: {{ .Report.BaseInfo.LanIp }}</li>
+        <li>广域网IP: {{ .Report.BaseInfo.WanIp }}</li>
+        <li>MAC地址: {{ .Report.BaseInfo.MacAddr }}</li>
+        <li>位置: {{ .Report.BaseInfo.Location }}</li>
+        <li>主机名: {{ .Report.BaseInfo.HostName }}</li>
+        <li>运行时间: {{ .Report.BaseInfo.UpTime }}</li>
+        <li>时间: {{ .Report.BaseInfo.DateTime }}</li>
+        <li>映射端口: {{ .Report.BaseInfo.MappingPort }}</li>
+        <li>操作系统厂商: {{ .Report.BaseInfo.OsVendor }}</li>
+        <li>系统版本: {{ .Report.BaseInfo.SysIssue }}</li>
+        <li>内核版本: {{ .Report.BaseInfo.KernelVersion }}</li>
+        <li>虚拟化平台: {{ .Report.BaseInfo.Virtual }}</li>
+        <li>CPU类型: {{ .Report.BaseInfo.CpuType }}</li>
+        <li>CPU数量: {{ .Report.BaseInfo.CpuNum }}</li>
+        <li>CPU核心数: {{ .Report.BaseInfo.CpuCore }}</li>
+        <li>内存使用: {{ .Report.BaseInfo.MemoryUsage }}</li>
+        <li>交换分区: {{ .Report.BaseInfo.SwapPartition }}</li>
+        <li>磁盘使用: {{ .Report.BaseInfo.DiskUsage }}</li>
+        <li>描述: {{ .Report.BaseInfo.Description }}</li>
+        <li>平台规范: {{ .Report.BaseInfo.PlatformNorm }}</li>
+        <li id="start-time"> 开始时间: {{ .Report.BaseInfo.Start }}</li>
+        <li id="end-time"> 结束时间: {{ .Report.BaseInfo.End }}</li>
+    </ul>
+
+    <!-- 合规信息部分 -->
+    <h2>合规信息</h2>
+    <table>
+        <thead>
+            <tr>
+                <th class="actual" >名称</th>
+                <th class="actual" >操作</th>
+                <th class="actual">标准</th>
+                <th class="actual" >实际</th>
+                <th class="protect">保护措施</th>
+                <th>状态</th>
+                <th>得分</th>
+                <th>类型</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{ range .Report.ComplianceInfo }}
+            <tr>
+                <td>{{ .Name }}</td>
+                <td>{{ .Action }}</td>
+                <td>{{ .Standard }}</td>
+                <td>{{ .Actual }}</td>
+                <td class="protect">{{ .Protect }}</td>
+                <td>
+                    {{ if eq .Status "1" }}
+                    <span class="pass">通过</span>
+                    {{ else if eq .Status "0" }}
+                    <span class="fail">不通过</span>
+                    {{ else }}
+                    <span>未知</span>
+                    {{ end }}
+                </td>
+                <td>{{ .Score }}</td>
+                <td>{{ .Type }}</td>
+            </tr>
+            {{ end }}
+        </tbody>
+    </table>
+
+    <script>
+        // 时间戳转换为指定格式的日期时间
+        function formatTimestamp(timestamp) {
+            const date = new Date(timestamp * 1000); // 转换为毫秒
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0'); // 月份是从0开始的
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const seconds = String(date.getSeconds()).padStart(2, '0');
+            
+            return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+        }
+
+        // 获取从后端传来的时间戳
+        const startTime = JSON.parse('{{ .Report.BaseInfo.Start }}');
+        const endTime = JSON.parse('{{ .Report.BaseInfo.End }}');
+
+        // 填充页面
+        document.getElementById('start-time').textContent = `开始时间: ${formatTimestamp(startTime)}`;
+        document.getElementById('end-time').textContent = `结束时间: ${formatTimestamp(endTime)}`;
+    </script>
+</body>
+</html>

@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>合规主机列表</title>
+  <style>
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f2f2f2;
+    }
+
+    .pagination {
+      margin-top: 20px;
+      text-align: center;
+    }
+
+    .pagination button {
+      padding: 5px 10px;
+      margin: 0 5px;
+      border: 1px solid #ddd;
+      background-color: #f0f0f0;
+      cursor: pointer;
+    }
+
+    .pagination button:disabled {
+      background-color: #ddd;
+      cursor: not-allowed;
+    }
+
+    .task-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      padding: 20px;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .task-modal .modal-content {
+      background-color: white;
+      padding: 20px;
+      border-radius: 5px;
+      max-width: 800px;
+      margin: auto;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>合规主机列表</h1>
+
+  <table id="host-list-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>主机名</th>
+        <th>IP地址</th>
+        <th>基线计数</th>
+        <th>创建时间</th>
+        <th>更新时间</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- 数据行会通过 JavaScript 动态填充 -->
+    </tbody>
+  </table>
+
+  <div class="pagination" id="pagination">
+    <button id="prev-page">上一页</button>
+    <span id="current-page">第 1 页</span>
+    <button id="next-page">下一页</button>
+  </div>
+
+  <!-- 任务详情模态框 -->
+  <div class="task-modal" id="task-modal">
+    <div class="modal-content">
+      <h2>任务详情</h2>
+      <div id="task-details"></div>
+      <button onclick="closeTaskModal()">关闭</button>
+    </div>
+  </div>
+
+  <script>
+    // 当前页数
+    let currentPage = 1;
+    const pageSize = 10;
+
+    // 获取数据并渲染表格
+    function fetchHostList(page) {
+      fetch(`/hostlist?page=${page}&page_size=${pageSize}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data && data.list && Array.isArray(data.list)) {
+            renderHostList(data.list);
+            renderPagination(data.total, page);
+          } else {
+            console.error("返回数据格式错误");
+          }
+        })
+        .catch(error => {
+          console.error("获取合规主机列表失败", error);
+        });
+    }
+
+    // 渲染主机列表
+    function renderHostList(hosts) {
+      const tableBody = document.querySelector("#host-list-table tbody");
+      tableBody.innerHTML = ""; // 清空表格
+
+      hosts.forEach(host => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+                    <td>${host.ID}</td>
+                    <td>${host.hostname}</td>
+                    <td>${host.ip}</td>
+                    <td>${host.baseline_count}</td>
+                    <td>${formatDate(host.CreatedAt)}</td>
+                    <td>${formatDate(host.UpdatedAt)}</td>
+                    <td><button onclick="viewTaskList(${host.ID})">查看任务详情</button></td>
+                `;
+        tableBody.appendChild(row);
+      });
+    }
+
+    // 渲染分页
+    function renderPagination(totalCount, currentPage) {
+      const totalPages = Math.ceil(totalCount / pageSize);
+      const currentPageSpan = document.getElementById("current-page");
+      const prevButton = document.getElementById("prev-page");
+      const nextButton = document.getElementById("next-page");
+
+      currentPageSpan.textContent = `第 ${currentPage} 页`;
+
+      prevButton.disabled = currentPage === 1;
+      nextButton.disabled = currentPage === totalPages;
+
+      prevButton.onclick = () => {
+        if (currentPage > 1) {
+          currentPage--;
+          fetchHostList(currentPage);
+        }
+      };
+
+      nextButton.onclick = () => {
+        if (currentPage < totalPages) {
+          currentPage++;
+          fetchHostList(currentPage);
+        }
+      };
+    }
+
+    // 时间戳转换为指定格式的日期时间
+    function formatDate(dateStr) {
+      const date = new Date(dateStr);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const seconds = String(date.getSeconds()).padStart(2, '0');
+
+      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    }
+
+    // 查看任务列表
+    function viewTaskList(hostId) {
+      fetch(`/tasks?host_id=${hostId}`)
+
+        .then(response => response.json())
+        .then(data => {
+          showTaskModal(data, hostId);
+        })
+        .catch(error => {
+          console.error("获取任务列表失败", error);
+          alert("获取任务列表失败");
+        });
+    }
+
+    // 显示任务详情模态框
+    function showTaskModal(tasks, hostId) {
+      const modal = document.getElementById("task-modal");
+      const taskDetailsDiv = document.getElementById("task-details");
+
+      // 表格结构
+      let tableContent = `
+        <table>
+            <thead>
+                <tr>
+                    <th>任务ID</th>
+                    <th>扫描时间</th>
+                    <th>任务详情</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${tasks.map(task => `
+                    <tr>
+                        <td>${task.ID}</td>
+                        <td>${task.CreatedAt}</td>
+                        <td><a href="/check/${hostId}/${task.ID}" target="_blank">查看任务详情</a></td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+
+      taskDetailsDiv.innerHTML = tableContent;
+
+      modal.style.display = "flex";
+    }
+
+    // 关闭任务详情模态框
+    function closeTaskModal() {
+      const modal = document.getElementById("task-modal");
+      modal.style.display = "none";
+    }
+
+    // 初始化页面
+    fetchHostList(currentPage);
+  </script>
+</body>
+
+</html>

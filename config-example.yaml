@@ -1,0 +1,9 @@
+
+port: 9527
+host: 0.0.0.0
+repo:
+  db_host: 127.0.0.1
+  db_port: 3306
+  db_name: demo
+  username: root
+  password: zzj@123456
