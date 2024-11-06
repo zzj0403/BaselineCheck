@@ -183,29 +183,7 @@ func GetComplianceInfo(resGet *ResComplianceInfo, stc SingleComplianceInfo) {
 		stc.Type = "账号口令"
 		resGet.ComplianceInfo = append(resGet.ComplianceInfo, stc)
 	}
-	log.Println("获取用户组信息")
-	group := comm.GetCmdRes(`cat /etc/group | wc -l`)
-	if group != "" {
-		stc.Name = "检查是否按组进行账号管理"
-		stc.Action = "查看/etc/login.defs中PASS_WARN_AGE配置"
-		stc.Standard = "yes"
-		stc.Actual = "yes"
-		stc.Protect = "创建新的用户组 #groupadd 组名 #usermod -g 组名 -d 用户目录 -m 用户名 把用户添加进入某个组(s)或参考usermod --help说明进行设置"
-		stc.Status = "0"
-		stc.Score = 3
-		stc.Type = "账号口令"
-		resGet.ComplianceInfo = append(resGet.ComplianceInfo, stc)
-	} else {
-		stc.Name = "检查是否按组进行账号管理"
-		stc.Action = "查看/etc/login.defs中PASS_WARN_AGE配置"
-		stc.Standard = "yes"
-		stc.Actual = "no"
-		stc.Protect = "创建新的用户组 #groupadd 组名 #usermod -g 组名 -d 用户目录 -m 用户名 把用户添加进入某个组(s)或参考usermod --help说明进行设置"
-		stc.Status = "1"
-		stc.Score = 3
-		stc.Type = "账号口令"
-		resGet.ComplianceInfo = append(resGet.ComplianceInfo, stc)
-	}
+
 	log.Println("获取test用户信息")
 	test := comm.GetCmdRes(`cat /etc/passwd |grep test*`)
 	if test != "" {
